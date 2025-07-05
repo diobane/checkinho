@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useScanner } from '../contexts/ScannerContext';
-import { Box, Button, Typography, CircularProgress, ToggleButtonGroup, ToggleButton, FormControl, InputLabel, MenuItem, Select, type SelectChangeEvent } from '@mui/material';
+import { Box, Typography, CircularProgress, ToggleButtonGroup, ToggleButton, FormControl, InputLabel, MenuItem, Select, type SelectChangeEvent } from '@mui/material';
 import type { CameraDevice } from 'html5-qrcode';
 import successLogo from '../assets/success.svg';
 import errorLogo from '../assets/error.svg';
