@@ -103,6 +103,7 @@ export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children })
       .catch(err => {
         console.error('Erro ao buscar câmeras:', err);
         setStatusMessage('Erro ao acessar câmeras. Verifique as permissões.');
+        setStatusCode('GENERIC_ERROR');
       });
   }, []);
 
@@ -146,7 +147,7 @@ export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children })
     } else {
       setStatusCode('ERROR');
     }
-    resetAfterDelay();
+    resetAfterDelay(4000);
   };
 
   const handleCheckoutFlow = async (qrCode: string) => {

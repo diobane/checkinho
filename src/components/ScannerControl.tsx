@@ -85,7 +85,6 @@ export default function ScannerControl() {
       {/* Label de Status */}
       {selectedCameraLabel && (
         <Box display="flex" alignItems="center" justifyContent="center" minHeight={40} gap={1}>
-          
           <Box>
             { statusCode === "WAITING_READING" && 
                 <Typography variant="h6" component="p" textAlign="center">
@@ -94,7 +93,18 @@ export default function ScannerControl() {
             }
 
             { statusCode === "CALLING_API" && 
-              <Box>
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '24px',
+                marginTop: '28px',
+                fontSize: 'larger',
+                fontWeight: '700',
+                color: '#3F5BA1',
+                textAlign: 'center'
+              }}>
                 <CircularProgress thickness={5} color='inherit' size={50}/>
                 <Typography variant="h6" component="p" textAlign="center">
                   {statusMessage}
@@ -103,7 +113,18 @@ export default function ScannerControl() {
             }
 
             { statusCode === "CHECKIN_SUCCESS" && 
-              <Box>
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '24px',
+                marginTop: '28px',
+                fontSize: 'larger',
+                fontWeight: '700',
+                color: '#5DA277',
+                textAlign: 'center'
+              }}>
                 <img src={successLogo} alt="Success logo"/>
                 <Typography variant="h6" component="p" textAlign="center">
                   {statusMessage}
@@ -115,7 +136,18 @@ export default function ScannerControl() {
             }
 
             { statusCode === "ERROR" && 
-              <Box>
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '24px',
+                marginTop: '28px',
+                fontSize: 'larger',
+                fontWeight: '700',
+                color: '#93344A',
+                textAlign: 'center'
+              }}>
                 <img src={errorLogo} alt="Error logo"/>
                 <Typography variant="h6" component="p" textAlign="center">
                   {statusMessage}
@@ -124,7 +156,18 @@ export default function ScannerControl() {
             }
 
             { statusCode === "CHECKOUT_SUCCESS" && 
-              <Box>
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '24px',
+                marginTop: '28px',
+                fontSize: 'larger',
+                fontWeight: '700',
+                color: '#5DA277',
+                textAlign: 'center'
+              }}>
                 <img src={successLogo} alt="Success logo"/>
                 <Typography variant="h6" component="p" textAlign="center">
                   {statusMessage}
@@ -133,7 +176,18 @@ export default function ScannerControl() {
             }
 
             { statusCode === "GENERIC_ERROR" && 
-              <Box>
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '24px',
+                marginTop: '28px',
+                fontSize: 'larger',
+                fontWeight: '700',
+                color: '#93344A',
+                textAlign: 'center'
+              }}>
                 <Typography variant="h6" component="p" textAlign="center">
                   {statusMessage}
                 </Typography>
@@ -142,7 +196,6 @@ export default function ScannerControl() {
           </Box>
         </Box>
       )}
-      
     </Box>
   );
 }
