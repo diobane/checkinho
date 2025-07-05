@@ -85,7 +85,16 @@ export default function ScannerControl() {
       {/* Label de Status */}
       {selectedCameraLabel && (
         <Box display="flex" alignItems="center" justifyContent="center" minHeight={40} gap={1}>
-          <Box>
+          <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '24px',
+                marginTop: '28px',
+                fontSize: 'larger',
+                fontWeight: '700',
+              }}>
             { statusCode === "WAITING_READING" && 
                 <Typography variant="h6" component="p" textAlign="center">
                   {statusMessage}
