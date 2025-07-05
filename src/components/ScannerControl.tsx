@@ -28,6 +28,7 @@ export default function ScannerControl() {
   }, [selectedCameraLabel, startScannerWithSelectedCamera]);
 
   const handleModeChange = (event: React.MouseEvent<HTMLElement>, newMode: 'checkin' | 'checkout' | null) => {
+    event.preventDefault();
     if (newMode !== null) {
       setMode(newMode);
     }
