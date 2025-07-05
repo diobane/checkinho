@@ -2,7 +2,7 @@ import React, { createContext, useContext, useRef, useState, useCallback, type R
 import { Html5Qrcode, type CameraDevice } from 'html5-qrcode';
 
 const LOCAL_STORAGE_KEY = 'checkinAppCameraLabel';
-const GOOGLE_SCRIPT_API_URL = 'AKfycbwE6JX4ysIWPHCxH55wiETeHFDDM-bwo8zImXDvLfbNuVx93r0JQ-OiWNp2oST__cIjjA';
+const GOOGLE_SCRIPT_API_URL = 'AKfycbwPiAYtbAXPfZk_5UM5rJfI8Im2f4WTILynmi1a7swpjFEHmVqIx0VDizydK8mUgMcZ8w';
 
 // --- Tipos para o contexto ---
 type Mode = 'checkin' | 'checkout';
@@ -15,10 +15,9 @@ interface CheckoutState {
 interface ScannerContextType {
   mode: Mode;
   setMode: (mode: Mode) => void;
+  statusCode: string;
   statusMessage: string;
   checkinResponse: CheckinResponseInterface | null;
-  checkoutResponse: CheckoutResponseInterface | null;
-  isProcessing: boolean;
   cameras: CameraDevice[];
   selectedCameraLabel: string | null;
   selectCamera: (label: string) => void;
@@ -46,10 +45,8 @@ interface CheckoutResponseContentInterface {
 
 const ScannerContext = createContext<ScannerContextType | undefined>(undefined);
 
-// Chama API de check-in
 const apiCheckin = (qrCode: string): Promise<CheckinResponseInterface> => {
-  console.log(`API CHECKIN chamada com: ${qrCode}`);
-  return fetch(`https://script.google.com/macros/s/${GOOGLE_SCRIPT_API_URL}/exec`, {                                                                                
+  return fetch(`https://script.google.com/macros/s/${GOOGLE_SCRIPT_API_URL}/exec`, {
     method: 'POST',
     mode: 'cors',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -57,43 +54,41 @@ const apiCheckin = (qrCode: string): Promise<CheckinResponseInterface> => {
   })
     .then((res) => res.json())
     .then((data) => {
-      return { status: data.status, message: data.message, team: data.team };
+      return data as CheckinResponseInterface;
     })
     .catch(() => {
       return { status: 'error', message: 'Erro ao conectar com o servidor.' };
     });
 };
 
-// Chama API de busca para o check-out
-const apiGetChildData = (childQrCode: string): Promise<{ status: string; content?: { childId: string; responsibleCode: string } }> => {
-  console.log(`API GET_CHILD_DATA chamada com: ${childQrCode}`);
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve({
-        status: 'success',
-        content: {
-          childId: childQrCode,
-          responsibleCode: `RESP_${childQrCode}` // Gera um código de responsável previsível para teste
-        }
-      });
-    }, 1000);
-  });
+const apiGetChildData = (qrCode: string): Promise<CheckoutResponseInterface> => {
+  return fetch(`https://script.google.com/macros/s/${GOOGLE_SCRIPT_API_URL}/exec?code=${qrCode}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      return data as CheckoutResponseInterface;
+    })
+    .catch((data) => {
+      return { status: data.status, message: 'Erro ao conectar com o servidor.' };
+    });
 };
-
-
-// --- O Componente Provider ---
 
 export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const modeRef = useRef<Mode>('checkin');
+  const checkoutRef = useRef<CheckoutState>({ step: 1, responsibleCode: null });
 
   const [mode, setModeState] = useState<Mode>('checkin');
   const [statusMessage, setStatusMessage] = useState('Aguardando leitura...');
+  const [statusCode, setStatusCode] = useState('WAITING_READING');
+  const [checkinResponse, setCheckinResponse] = useState<CheckinResponseInterface | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [cameras, setCameras] = useState<CameraDevice[]>([]);
   const [selectedCameraLabel, setSelectedCameraLabel] = useState<string | null>(null);
-  const [checkoutState, setCheckoutState] = useState<CheckoutState>({ step: 1, responsibleCode: null });
+  
 
   // Busca as câmeras disponíveis e a preferência salva ao iniciar
   useEffect(() => {
@@ -123,12 +118,12 @@ export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
     modeRef.current = newMode;
     setModeState(newMode);
-    setCheckoutState({ step: 1, responsibleCode: null }); // Reseta o fluxo de checkout
+    checkoutRef.current = { step: 1, responsibleCode: null }; // Reseta o fluxo de checkout
     setStatusMessage('Aguardando leitura...');
+    setStatusCode('WAITING_READING');
     setIsProcessing(false);
   };
 
-  // Função chamada no sucesso da leitura do QR Code
   const onScanSuccess = (decodedText: string) => {
     if (scannerRef.current) scannerRef.current.pause();
     setIsProcessing(true);
@@ -141,33 +136,48 @@ export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const handleCheckinFlow = async (qrCode: string) => {
-    setStatusMessage('Registrando presença...');
+    setStatusMessage('Registrando presença para ID: ' + qrCode);
+    setStatusCode('CALLING_API');
     const response = await apiCheckin(qrCode);
+    setCheckinResponse(response);
     setStatusMessage(response.message);
+    if (response.status === 'success') {
+      setStatusCode('CHECKIN_SUCCESS');
+    } else {
+      setStatusCode('ERROR');
+    }
     resetAfterDelay();
   };
 
   const handleCheckoutFlow = async (qrCode: string) => {
-    if (checkoutState.step === 1) {
+    if (checkoutRef.current.step === 1) {
       // Primeiro passo: ler o QR da criança
-      setStatusMessage('Buscando dados da criança...');
+
+      setStatusMessage('Buscando informações para ID: ' + qrCode);
+      setStatusCode('CALLING_API');
       const response = await apiGetChildData(qrCode);
+
       if (response.status === 'success' && response.content) {
-        setCheckoutState({ step: 2, responsibleCode: response.content.responsibleCode });
-        setStatusMessage('Aguardando leitura do responsável...');
+        const readerlabel = !qrCode.startsWith('R') ? 'do responsável' : 'da criança';
+        checkoutRef.current = { step: 2, responsibleCode: response.content.responsibleCode };
+        setStatusMessage('Aguardando leitura ' + readerlabel);
+        setStatusCode('WAITING_READING');
         setIsProcessing(false);
         if (scannerRef.current) scannerRef.current.resume();
       } else {
-        setStatusMessage('Criança não encontrada.');
+        setStatusMessage('Não há nenhuma criança ou responsável para esse ID.');
+        setStatusCode('ERROR');
         resetAfterDelay();
       }
     } else {
       // Segundo passo: ler o QR do responsável
-      setStatusMessage('Verificando responsável...');
-      if (qrCode === checkoutState.responsibleCode) {
+
+      if (qrCode === checkoutRef.current.responsibleCode) {
         setStatusMessage('Checkout realizado com sucesso!');
+        setStatusCode('CHECKOUT_SUCCESS');
       } else {
         setStatusMessage('Este não é o responsável da criança!');
+        setStatusCode('ERROR');
       }
       resetAfterDelay();
     }
@@ -176,8 +186,9 @@ export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children })
   // Reseta o estado para o inicial após um tempo
   const resetAfterDelay = (delay = 3000) => {
     timeoutRef.current = setTimeout(() => {
-      setCheckoutState({ step: 1, responsibleCode: null });
+      checkoutRef.current = { step: 1, responsibleCode: null };
       setStatusMessage('Aguardando leitura...');
+      setStatusCode('WAITING_READING');
       setIsProcessing(false);
       if (scannerRef.current?.getState() === 3) {
         scannerRef.current.resume();
@@ -197,8 +208,9 @@ export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     const camera = cameras.find(c => c.label === selectedCameraLabel);
     if (!camera) {
-        setStatusMessage("Câmera salva não encontrada.");
-        return;
+      setStatusMessage("Câmera salva não encontrada.");
+      setStatusCode('GENERIC_ERROR');
+      return;
     }
 
     // Cria a instância única do scanner
@@ -213,6 +225,7 @@ export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children })
     ).catch(err => {
         console.error("Não foi possível iniciar o scanner", err);
         setStatusMessage("Erro ao iniciar a câmera.");
+        setStatusCode('GENERIC_ERROR');
     });
 
   }, [selectedCameraLabel, cameras]); // A função é recriada se a câmera mudar
@@ -220,8 +233,9 @@ export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children })
   const value = {
     mode,
     setMode,
+    statusCode,
     statusMessage,
-    isProcessing,
+    checkinResponse,
     cameras,
     selectedCameraLabel,
     selectCamera,

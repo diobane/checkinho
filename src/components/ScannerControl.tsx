@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { useScanner } from '../contexts/ScannerContext';
 import { Box, Button, Typography, CircularProgress, ToggleButtonGroup, ToggleButton, FormControl, InputLabel, MenuItem, Select, type SelectChangeEvent } from '@mui/material';
 import type { CameraDevice } from 'html5-qrcode';
+import successLogo from '../assets/success.svg';
+import errorLogo from '../assets/error.svg';
 
 const SCANNER_CONTAINER_ID = 'qr-scanner-container';
 
@@ -9,8 +11,9 @@ export default function ScannerControl() {
   const {
     mode,
     setMode,
+    statusCode,
     statusMessage,
-    isProcessing,
+    checkinResponse,
     cameras,
     selectedCameraLabel,
     selectCamera,
@@ -82,10 +85,61 @@ export default function ScannerControl() {
       {/* Label de Status */}
       {selectedCameraLabel && (
         <Box display="flex" alignItems="center" justifyContent="center" minHeight={40} gap={1}>
-          {isProcessing && <CircularProgress size={20} />}
-          <Typography variant="h6" component="p" textAlign="center">
-            {statusMessage}
-          </Typography>
+          
+          <Box>
+            { statusCode === "WAITING_READING" && 
+                <Typography variant="h6" component="p" textAlign="center">
+                  {statusMessage}
+                </Typography>
+            }
+
+            { statusCode === "CALLING_API" && 
+              <Box>
+                <CircularProgress thickness={5} color='inherit' size={50}/>
+                <Typography variant="h6" component="p" textAlign="center">
+                  {statusMessage}
+                </Typography>
+              </Box>
+            }
+
+            { statusCode === "CHECKIN_SUCCESS" && 
+              <Box>
+                <img src={successLogo} alt="Success logo"/>
+                <Typography variant="h6" component="p" textAlign="center">
+                  {statusMessage}
+                </Typography>
+                <Typography variant="h6" component="p" textAlign="center">
+                  Time: {checkinResponse?.team}
+                </Typography>
+              </Box>
+            }
+
+            { statusCode === "ERROR" && 
+              <Box>
+                <img src={errorLogo} alt="Error logo"/>
+                <Typography variant="h6" component="p" textAlign="center">
+                  {statusMessage}
+                </Typography>
+              </Box>
+            }
+
+            { statusCode === "CHECKOUT_SUCCESS" && 
+              <Box>
+                <img src={successLogo} alt="Success logo"/>
+                <Typography variant="h6" component="p" textAlign="center">
+                  {statusMessage}
+                </Typography>
+              </Box>
+            }
+
+            { statusCode === "GENERIC_ERROR" && 
+              <Box>
+                <Typography variant="h6" component="p" textAlign="center">
+                  {statusMessage}
+                </Typography>
+              </Box>
+            }
+          </Box>
         </Box>
       )}
       
