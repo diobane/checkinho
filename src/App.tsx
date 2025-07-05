@@ -1,122 +1,46 @@
-import { useEffect, useState } from 'react';
-import successLogo from './assets/success.svg';
-import errorLogo from './assets/error.svg';
-import { Html5QrcodeScanner } from 'html5-qrcode';
-import { CircularProgress } from '@mui/material';
-import styles from './App.module.css';
-
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx8z7o85SIHOHNWHai02QaiQE-hwVTIxnPnhTX4wawwcj0d7tk0wM_xyAOhgMWb3RycPw/exec';
+import { useState, useCallback } from 'react';
+import { Box, Tab } from '@mui/material';
+import { TabContext, TabList, TabPanel } from '@mui/lab';
+import { ScannerProvider } from './contexts/ScannerContext'; // Importa o Provider
+import ScannerView from './components/ScannerView'; // O novo componente de UI
 
 export function App() {
-  const [status, setStatus] = useState('WAITING');
-  const [message, setMessage] = useState('Aguardando leitura...');
+  const [tabIndex, setTabIndex] = useState('checkin');
 
-  useEffect(() => {
-    function onScanSuccess(decodedText: string) {
-      html5QrcodeScanner.pause();
+  const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
+    setTabIndex(newValue);
+  };
 
-      setStatus('REGISTERING');
-      setMessage(`Registrando presença para ID: ${decodedText}`);
+  const handleCheckinScan = useCallback((decodedText: string) => {
+    console.log('FUNÇÃO DE CHECK-IN EXECUTADA:', decodedText);
+    alert(`CHECK-IN: ${decodedText}`);
+  }, []);
 
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: JSON.stringify({ id: decodedText }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setMessage(data.message);
-          setStatus(data.status === 'success' ? 'SUCCESS' : 'ERROR');
-        })
-        .catch(() => {
-          setStatus('ERROR');
-          setMessage('Erro ao conectar com o servidor.');
-        })
-        .finally(() => {
-          setTimeout(() => {
-            html5QrcodeScanner.resume();
-            setStatus('WAITING');
-            setMessage('Aguardando leitura...');
-          }, 3000);
-        });
-    }
-
-    function onScanError(_errorMessage: string) {
-      //...
-    }
-
-    const html5QrcodeScanner = new Html5QrcodeScanner('qr-reader', {
-      fps: 10,
-      qrbox: 250,
-    }, false);
-
-    html5QrcodeScanner.render(onScanSuccess, onScanError);
+  const handleCheckoutScan = useCallback((decodedText: string) => {
+    console.log('FUNÇÃO DE CHECK-OUT EXECUTADA:', decodedText);
+    alert(`CHECK-OUT: ${decodedText}`);
   }, []);
 
   return (
-    <>
-      <main className={styles.container}>
-        <h1></h1>
-        <div id="qr-reader" className={styles.qrBox}></div>
-        <div id="result" className={styles.result}>
-
-          { status === "WAITING" && 
-            <div className={styles.waiting}>
-              <span>{ message }</span>
-            </div>
-          }
-
-          { status === "REGISTERING" && 
-            <div className={styles.registering}>
-              <CircularProgress thickness={5} color='inherit' size={50}/>
-              <span>{ message }</span>
-            </div>
-          }
-
-          { status === "SUCCESS" && 
-            <div className={styles.success}>
-              <img src={successLogo} alt="Success logo" />
-              <span>{ message }</span>
-            </div>
-          }
-
-          { status === "ERROR" && 
-            <div className={styles.error}>
-              <img src={errorLogo} alt="Error logo" />
-              <span>{ message }</span>
-            </div>
-          }
-        </div>
-      </main>
-    </>
+    // Envolve tudo com o Provider
+    <ScannerProvider> 
+      <Box sx={{ width: '100%', typography: 'body1' }}>
+        <TabContext value={tabIndex}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <TabList onChange={handleTabChange} aria-label="Checkin and out tabs" variant="fullWidth">
+              <Tab label="Entrada" value="checkin" />
+              <Tab label="Saída" value="checkout" />
+            </TabList>
+          </Box>
+          <TabPanel value="checkin">
+            {/* O ScannerView é ativado/desativado pelo TabPanel */}
+            <ScannerView containerId="checkin-reader" onScan={handleCheckinScan} />
+          </TabPanel>
+          <TabPanel value="checkout">
+            <ScannerView containerId="checkout-reader" onScan={handleCheckoutScan} />
+          </TabPanel>
+        </TabContext>
+      </Box>
+    </ScannerProvider>
   );
-
-
-  // const [count, setCount] = useState(0)
-
-  // return (
-  //   <>
-  //     <div>
-  //       <a href="https://vite.dev" target="_blank">
-  //         <img src={viteLogo} className="logo" alt="Vite logo" />
-  //       </a>
-  //       <a href="https://react.dev" target="_blank">
-  //         <img src={reactLogo} className="logo react" alt="React logo" />
-  //       </a>
-  //     </div>
-  //     <h1>Vite + React</h1>
-  //     <div className="card">
-  //       <button onClick={() => setCount((count) => count + 1)}>
-  //         count is {count}
-  //       </button>
-  //       <p>
-  //         Edit <code>src/App.tsx</code> and save to test HMR
-  //       </p>
-  //     </div>
-  //     <p className="read-the-docs">
-  //       Click on the Vite and React logos to learn more
-  //     </p>
-  //   </>
-  // )
 }
