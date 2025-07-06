@@ -2,7 +2,7 @@ import React, { createContext, useContext, useRef, useState, useCallback, type R
 import { Html5Qrcode, type CameraDevice } from 'html5-qrcode';
 
 const LOCAL_STORAGE_KEY = 'checkinAppCameraLabel';
-const GOOGLE_SCRIPT_API_URL = 'AKfycbwPiAYtbAXPfZk_5UM5rJfI8Im2f4WTILynmi1a7swpjFEHmVqIx0VDizydK8mUgMcZ8w';
+const GOOGLE_SCRIPT_API_URL = 'AKfycbwspPJN_25A-5T2Dww0IlPrSaN6Bl5m-kV2IJzGXo0ba1XFFWT7l3DqWlAM6-1BQBia2g';
 
 // --- Tipos para o contexto ---
 type Mode = 'checkin' | 'checkout';
