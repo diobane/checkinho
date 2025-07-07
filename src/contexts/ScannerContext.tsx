@@ -2,7 +2,7 @@ import React, { createContext, useContext, useRef, useState, useCallback, type R
 import { Html5Qrcode, type CameraDevice } from 'html5-qrcode';
 
 const LOCAL_STORAGE_KEY = 'checkinAppCameraLabel';
-const GOOGLE_SCRIPT_API_URL = 'AKfycbwspPJN_25A-5T2Dww0IlPrSaN6Bl5m-kV2IJzGXo0ba1XFFWT7l3DqWlAM6-1BQBia2g';
+const GOOGLE_SCRIPT_API_URL = 'AKfycbyXOXQhy2GI2iLHItkSlcHgsRYULsWKjpJ9PjHggF_KohH1kV2bbnn8tVCDqsY7_kIvFg';
 
 // --- Tipos para o contexto ---
 type Mode = 'checkin' | 'checkout';
@@ -37,10 +37,8 @@ interface CheckoutResponseInterface {
 }
 
 interface CheckoutResponseContentInterface {
-    childId: number;
-    childName: string;
+    childId: number[];
     responsibleCode: string;
-    responsibleName: string;
 }
 
 const ScannerContext = createContext<ScannerContextType | undefined>(undefined);
@@ -80,6 +78,8 @@ export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children })
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const modeRef = useRef<Mode>('checkin');
   const checkoutRef = useRef<CheckoutState>({ step: 1, responsibleCode: null });
+  const checkoutResponseRef = useRef<CheckoutResponseInterface | null>(null);
+  const checkoutIsChildFirstReadRef = useRef<boolean>(false);
 
   const [mode, setModeState] = useState<Mode>('checkin');
   const [statusMessage, setStatusMessage] = useState('Aguardando leitura...');
@@ -157,8 +157,10 @@ export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children })
       setStatusMessage('Buscando informações para ID: ' + qrCode);
       setStatusCode('CALLING_API');
       const response = await apiGetChildData(qrCode);
+      checkoutResponseRef.current = response;
 
       if (response.status === 'success' && response.content) {
+        checkoutIsChildFirstReadRef.current = !qrCode.startsWith('R') ? true : false;
         const readerlabel = !qrCode.startsWith('R') ? 'do responsável' : 'da criança';
         checkoutRef.current = { step: 2, responsibleCode: response.content.responsibleCode };
         setStatusMessage('Aguardando leitura ' + readerlabel);
@@ -173,7 +175,10 @@ export const ScannerProvider: React.FC<{ children: ReactNode }> = ({ children })
     } else {
       // Segundo passo: ler o QR do responsável
 
-      if (qrCode === checkoutRef.current.responsibleCode) {
+      if (checkoutIsChildFirstReadRef.current && qrCode.startsWith('R') && checkoutRef.current.responsibleCode?.includes(qrCode)) {
+        setStatusMessage('Checkout realizado com sucesso!');
+        setStatusCode('CHECKOUT_SUCCESS');
+      } else if (!checkoutIsChildFirstReadRef.current && checkoutResponseRef?.current?.content?.childId.includes(Number(qrCode))) {
         setStatusMessage('Checkout realizado com sucesso!');
         setStatusCode('CHECKOUT_SUCCESS');
       } else {
